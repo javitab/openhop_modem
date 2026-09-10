@@ -69,10 +69,11 @@ struct RfFrontEndControlConfig {
 };
 
 struct BatterySenseConfig {
-    int8_t pin;                 // ADC pin, -1 when no battery sense exists
-    int8_t enable_pin;          // optional divider/ADC gate, -1 when always on
-    bool   enable_active_high;
-    float  multiplier;          // ESP calibrated pin millivolts -> pack millivolts
+    // Omitted battery configs must never claim GPIO0 (often the PRG button).
+    int8_t pin = -1;            // ADC pin, -1 when no battery sense exists
+    int8_t enable_pin = -1;     // optional divider/ADC gate, -1 when always on
+    bool   enable_active_high = true;
+    float  multiplier = 0.0f;   // ESP calibrated pin millivolts -> pack millivolts
     uint8_t fuel_gauge_i2c_addr = 0;      // MAX17048-style fuel gauge, 0=none
     uint8_t fuel_gauge_vcell_reg = 0x02;  // VCELL register (78.125 uV/LSB)
     uint8_t fuel_gauge_crate_reg = 0;     // CRATE register, 0=not exposed
