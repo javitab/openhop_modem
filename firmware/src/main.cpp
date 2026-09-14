@@ -1808,10 +1808,8 @@ void setup() {
     }
 
     // Hold the splash for the rest of SPLASH_HOLD_MS if init finished
-    // earlier than that. Wi-Fi STA connect already burns several seconds
-    // so on most boards this loop is a no-op, but on the P4-Nano (no
-    // radio init, no Wi-Fi delay when offline) we still want the logo
-    // up for a clean visible second.
+    // earlier than that. STA connection is asynchronous; the main loop
+    // services its connection deadline after this short display hold.
     while (millis() - splashStartedMs < SPLASH_HOLD_MS) {
         delay(50);
     }
@@ -1831,7 +1829,7 @@ void setup() {
 #endif
 
     // Arm the task watchdog LAST — everything above may legitimately take
-    // many seconds (WiFi STA connect up to 30 s). From now on, any loop()
+    // many seconds (radio/PMU/Ethernet initialization). From now on, any loop()
     // iteration that doesn't complete within LOOP_WDT_TIMEOUT_S triggers a
     // panic reboot. If the bootloader is OTA-aware, the rolled-back slot
     // would take over; on stock Arduino bootloader, the same image reboots.
@@ -1948,6 +1946,12 @@ void loop() {
         }
     }
 
+    // Consume Wi-Fi event invalidation before servicing stale TCP bytes.
+    if (BOARD.has_wifi) WifiManager::loop();
+#ifdef ARDUINO_ARCH_ESP32
+    const uint32_t invalidSTA = WifiManager::consumeSTAInvalidation();
+    if (invalidSTA) TCPServer::invalidateInterface(IPAddress(invalidSTA));
+#endif
     if (tcpStarted) TCPServer::loop();
 #if defined(OPENHOP_ETHERNET_W5100S)
     W5100sHttpServer::loop();
@@ -1960,7 +1964,6 @@ void loop() {
 
     sampleNoiseFloor();
     maybeResetAgc();
-    if (BOARD.has_wifi) WifiManager::loop();
     EthernetManager::loop();
     // Low-priority I2C telemetry runs only after radio IRQs and all host
     // transports have been drained for this iteration.
