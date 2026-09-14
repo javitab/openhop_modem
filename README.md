@@ -214,6 +214,60 @@ T114 has no IP stack at all — the only paths in are USB-CDC and the
 secondary UART, and updates are either Adafruit DFU over USB or the
 in-app `OTA_*` commands carried over the same transport.
 
+### Wi-Fi outage recovery
+
+Saved Wi-Fi connects asynchronously: USB/radio/main-loop work does not wait for
+association or DHCP. Each attempt has a 30-second deadline, followed by retry
+backoff of 5, 10, 20, 40 and then at most 60 seconds. Every third failed attempt
+recreates **only the station interface**, with a 250 ms cooperative settling
+interval. Arduino's reason-dependent automatic reconnect is disabled; its initial
+one-time retry can still occur within the firmware deadline. Authentication
+failure and lost-IP events therefore cannot leave the manager passively waiting
+forever. Recovery neither erases credentials nor primarily relies on MCU reboot.
+Driver API calls are still synchronous; this is a cooperative recovery policy,
+not a hard real-time guarantee for the underlying Wi-Fi driver.
+
+If the initial connection fails, the open `openHop-Modem-XXXX` setup AP stays
+available while the saved network is retried in AP+STA mode. The setup HTTP server
+checks each accepted socket's local address against the current nonzero AP IPv4
+address before reading configuration, scanning, or saving changes, and requires
+AP mode to remain enabled. STA, IPv6, and missing/stale local addresses are
+rejected, independently of listener binding (the framework may wildcard-bind).
+On STA success it is stopped/deleted and the AP is removed before normal
+management HTTP/OTA starts. Failed AP startup
+or shutdown is retried at five-second intervals. An empty configuration stays in
+intentional setup mode without attempting STA. After the first successful STA
+connection, later outages retry STA without opening a new unauthenticated portal.
+
+Disconnect/stop/lost-IP events and address changes invalidate the old Wi-Fi TCP
+session, including parser and authentication state, even when an outage completes
+between loop polls. The next client must authenticate again when a token is set.
+Sessions bound to a different interface address (Ethernet) and the wildcard TCP
+and management listeners are not routinely restarted; an unchanged DHCP renewal
+alone does not drop the client. The displayed IP follows the current usable STA
+address (or the setup AP address), rather than retaining an obsolete lease.
+Static/DHCP selection, hostname, antenna selection and the saved/default-on
+Wi-Fi power-save policy are unchanged.
+
+Host regression checks (C++17 compiler required):
+
+```bash
+python3 firmware/tools/test_wifi_recovery.py
+```
+
+These compile the production Wi-Fi manager, TCP server and frame parser with
+recording hardware stubs, plus the complete production portal handlers and
+extracted lifecycle functions. Portal admission tests deliberately use a wildcard
+listener and exercise AP, STA, IPv6, missing/stale address, and disabled AP cases
+on every route, checking rejected requests have no scan/configuration/RF effects.
+They cover deadlines/backoff and timer wrap, failures and station restarts,
+short event outages, address changes, AP setup/retry/teardown, and per-interface
+TCP authentication/parser cleanup. They do **not** simulate the ESP32 driver,
+prove RF/DHCP behavior or establish that a particular router/board's outage is
+fixed. Hardware validation must still exercise multi-minute AP outages, wrong
+credentials, DHCP expiry/address changes, HTTP/OTA and TCP recovery on the exact
+board and firmware build.
+
 ### Web UI / OTA / JSON API authentication (v0.8+)
 
 From v0.8 the HTTP surface (web management page, `/api/*` JSON endpoints,
