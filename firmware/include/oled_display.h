@@ -6,7 +6,8 @@
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || defined(BOARD_STATION_G3)
+#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || \
+    defined(BOARD_LILYGO_TBEAM_1W) || defined(BOARD_STATION_G3)
 #include <Adafruit_SH110X.h>
 using OledDriver = Adafruit_SH1106G;
 static constexpr uint16_t OLED_WHITE = SH110X_WHITE;
