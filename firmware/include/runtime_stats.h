@@ -22,6 +22,10 @@ struct Snapshot {
     float stationG3PowerW;
     float stationG3MinimumInputVoltageV;
     float stationG3MaximumCurrentMa;
+    bool hasBoardTemperature;
+    float boardTemperatureC;
+    bool hasBoardFan;
+    bool boardFanEnabled;
 };
 
 Snapshot capture();
