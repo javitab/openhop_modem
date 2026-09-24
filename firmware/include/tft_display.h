@@ -47,6 +47,8 @@ public:
                          uint32_t usb_idle_sec,
                          uint32_t rx_count, uint32_t tx_count,
                          uint32_t crc_errors,
+                         uint16_t battery_mv,
+                         float board_temperature_c,
                          const char* version);
     void showError(const char* msg);
     void turnOn();
