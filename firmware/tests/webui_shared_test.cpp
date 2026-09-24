@@ -226,6 +226,19 @@ void testStatsRenderIntegralValuesWithoutFormatFragments() {
     assertNotContains(stats, "<span class='v'>ld");
 }
 
+void testOptionalBoardTemperatureRendering() {
+    Model model = makeEspModel();
+    model.boardTemperatureAvailable = true;
+    model.boardTemperatureC = 46.5f;
+    model.capabilities.boardTemperature = true;
+    const std::string stats = renderStatsPage(model);
+    assertContains(stats, "Board temperature</span><span class='v'>46.5 C");
+
+    model.boardTemperatureAvailable = false;
+    model.capabilities.boardTemperature = false;
+    assertNotContains(renderStatsPage(model), "Board temperature</span>");
+}
+
 }  // namespace
 
 int main() {
@@ -236,6 +249,7 @@ int main() {
     testEthernetRootHasOnlyEthernetControlsAndHonestOtaStatus();
     testCapabilitiesControlOptionalSectionsAndFields();
     testStatsRenderIntegralValuesWithoutFormatFragments();
+    testOptionalBoardTemperatureRendering();
     std::cout << "webui shared renderer tests passed\n";
     return 0;
 }
