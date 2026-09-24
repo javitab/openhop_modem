@@ -45,7 +45,8 @@ void OledDisplay::begin() {
     _display = new OledDriver(128, 64, &Wire, BOARD.pin_i2c_oled_rst);
 
     // 5. Start display.
-#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || defined(BOARD_STATION_G3)
+#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || \
+    defined(BOARD_LILYGO_TBEAM_1W) || defined(BOARD_STATION_G3)
     if (_display->begin(DISPLAY_ADDRESS, true)) {
         _ready = true;
 
@@ -322,7 +323,8 @@ void OledDisplay::clear() {
 
 void OledDisplay::turnOff() {
     if (!_ready) return;
-#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || defined(BOARD_STATION_G3)
+#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || \
+    defined(BOARD_LILYGO_TBEAM_1W) || defined(BOARD_STATION_G3)
     _display->oled_command(SH110X_DISPLAYOFF);
 #else
     _display->ssd1306_command(SSD1306_DISPLAYOFF);
@@ -331,7 +333,8 @@ void OledDisplay::turnOff() {
 
 void OledDisplay::turnOn() {
     if (!_ready) return;
-#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || defined(BOARD_STATION_G3)
+#if defined(BOARD_STATION_G2) || defined(BOARD_LILYGO_TBEAM_S3_SUPREME) || \
+    defined(BOARD_LILYGO_TBEAM_1W) || defined(BOARD_STATION_G3)
     _display->oled_command(SH110X_DISPLAYON);
 #else
     _display->ssd1306_command(SSD1306_DISPLAYON);
