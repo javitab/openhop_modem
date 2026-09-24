@@ -8,6 +8,8 @@
 #include "board_config.h"
 #include "splash_logo.h"
 
+#include <cmath>
+
 #define DISPLAY_ADDRESS 0x3C
 
 void OledDisplay::begin() {
@@ -226,6 +228,8 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
                                   uint32_t usb_idle_sec,
                                   uint32_t rx_count, uint32_t tx_count,
                                   uint32_t crc_errors,
+                                  uint16_t battery_mv,
+                                  float board_temperature_c,
                                   const char* version) {
     if (!_ready) return;
 
@@ -295,6 +299,22 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
              (unsigned long)rx_count, (unsigned long)tx_count,
              (unsigned long)crc_errors);
     _display->print(buf);
+
+    // Line 5 (y=54) — optional board telemetry. Battery is voltage only;
+    // a percentage would be misleading under the external PA load.
+    _display->setCursor(0, 54);
+    if (battery_mv != 0xFFFF && std::isfinite(board_temperature_c)) {
+        snprintf(buf, sizeof(buf), "B:%.2fV T:%.1fC",
+                 (double)(battery_mv / 1000.0f),
+                 (double)board_temperature_c);
+        _display->print(buf);
+    } else if (battery_mv != 0xFFFF) {
+        snprintf(buf, sizeof(buf), "B:%.2fV", (double)(battery_mv / 1000.0f));
+        _display->print(buf);
+    } else if (std::isfinite(board_temperature_c)) {
+        snprintf(buf, sizeof(buf), "T:%.1fC", (double)board_temperature_c);
+        _display->print(buf);
+    }
 
     // Heartbeat dot, bottom-right
     static bool dot = false;

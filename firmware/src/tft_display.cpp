@@ -191,6 +191,8 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
                                   uint32_t usb_idle_sec,
                                   uint32_t rx_count, uint32_t tx_count,
                                   uint32_t crc_errors,
+                                  uint16_t battery_mv,
+                                  float board_temperature_c,
                                   const char* version) {
     if (!_ready) return;
     tft.fillScreen(COLOUR_BG);
@@ -211,6 +213,8 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
              (unsigned long)rx_count, (unsigned long)tx_count,
              (unsigned long)crc_errors);
     drawText(2, 57, buf, crc_errors ? COLOUR_WARN : COLOUR_FG, 1);
+    (void)battery_mv;
+    (void)board_temperature_c;
 }
 
 void OledDisplay::showError(const char* msg) {
@@ -546,6 +550,8 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
                                   uint32_t usb_idle_sec,
                                   uint32_t rx_count, uint32_t tx_count,
                                   uint32_t crc_errors,
+                                  uint16_t battery_mv,
+                                  float board_temperature_c,
                                   const char* version) {
     if (!_ready) return;
     tft.fillScreen(COLOUR_BG);
@@ -567,6 +573,8 @@ void OledDisplay::showDiagnostics(uint32_t uptime_sec,
     y += 18;
     drawLabelValue(y, "CRC ", String(crc_errors),
                    crc_errors ? COLOUR_WARN : COLOUR_ACCENT, 1);
+    (void)battery_mv;
+    (void)board_temperature_c;
 }
 
 // ─── Error / power ───────────────────────────────────────────

@@ -33,6 +33,8 @@ public:
                                 uint32_t,
                                 uint32_t, uint32_t,
                                 uint32_t,
+                                uint16_t,
+                                float,
                                 const char*) {}
     inline void showError(const char*) {}
     inline void turnOn() {}

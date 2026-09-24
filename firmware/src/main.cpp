@@ -2106,9 +2106,13 @@ void loop() {
                 uint32_t usb_idle = (lastUsbCmdMs == 0)
                     ? UINT32_MAX
                     : (millis() - lastUsbCmdMs) / 1000;
+                const uint16_t batteryMv =
+                    BatteryMonitor::readMilliVolts(BOARD.battery);
+                const float boardTemperatureC = TBeam1WFan::temperatureC();
                 oled.showDiagnostics(uptime, ip.c_str(), usb_idle,
                                      status.rx_count, status.tx_count,
-                                     status.crc_errors, fwVersion.c_str());
+                                     status.crc_errors, batteryMv,
+                                     boardTemperatureC, fwVersion.c_str());
             }
         }
     }
