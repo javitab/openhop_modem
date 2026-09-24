@@ -4,8 +4,8 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 #include <Arduino.h>
-#include <driver/adc.h>
-#include <esp_adc_cal.h>
+#include <esp_adc/adc_cali_scheme.h>
+#include <esp_adc/adc_oneshot.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
@@ -19,20 +19,58 @@ bool shutdown = false;
 void task(void*) {
     pinMode(BOARD.thermistor.fan_pin, OUTPUT);
     digitalWrite(BOARD.thermistor.fan_pin, HIGH);
-    const esp_err_t setup = adc2_config_channel_atten(
-        ADC2_CHANNEL_3, ADC_ATTEN_DB_11);
-    if (setup != ESP_OK) {
-        Serial.printf("ERROR: T-Beam 1W NTC ADC setup failed: %d; fan stays ON\n",
-                      setup);
+
+    adc_unit_t unitId;
+    adc_channel_t channel;
+    esp_err_t error = adc_oneshot_io_to_channel(
+        BOARD.thermistor.ntc_pin, &unitId, &channel);
+    if (error != ESP_OK || unitId != ADC_UNIT_2) {
+        Serial.printf("ERROR: T-Beam 1W NTC pin mapping failed: %d; fan stays ON\n",
+                      error);
         vTaskDelete(nullptr);
         return;
     }
-    esp_adc_cal_characteristics_t calibration = {};
-    const auto source = esp_adc_cal_characterize(
-        ADC_UNIT_2, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &calibration);
-    if (source == ESP_ADC_CAL_VAL_DEFAULT_VREF ||
-        source == ESP_ADC_CAL_VAL_NOT_SUPPORTED) {
-        Serial.println("ERROR: T-Beam 1W NTC calibration unavailable; fan stays ON");
+
+    adc_oneshot_unit_handle_t adc = nullptr;
+    const adc_oneshot_unit_init_cfg_t unitConfig = {
+        .unit_id = unitId,
+        .clk_src = ADC_RTC_CLK_SRC_DEFAULT,
+        .ulp_mode = ADC_ULP_MODE_DISABLE,
+    };
+    error = adc_oneshot_new_unit(&unitConfig, &adc);
+    if (error != ESP_OK) {
+        Serial.printf("ERROR: T-Beam 1W NTC ADC setup failed: %d; fan stays ON\n",
+                      error);
+        vTaskDelete(nullptr);
+        return;
+    }
+
+    const adc_oneshot_chan_cfg_t channelConfig = {
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    error = adc_oneshot_config_channel(adc, channel, &channelConfig);
+    if (error != ESP_OK) {
+        Serial.printf("ERROR: T-Beam 1W NTC channel setup failed: %d; fan stays ON\n",
+                      error);
+        adc_oneshot_del_unit(adc);
+        vTaskDelete(nullptr);
+        return;
+    }
+
+    adc_cali_handle_t calibration = nullptr;
+    const adc_cali_curve_fitting_config_t calibrationConfig = {
+        .unit_id = unitId,
+        .chan = channel,
+        .atten = ADC_ATTEN_DB_12,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    error = adc_cali_create_scheme_curve_fitting(
+        &calibrationConfig, &calibration);
+    if (error != ESP_OK) {
+        Serial.printf("ERROR: T-Beam 1W NTC calibration failed: %d; fan stays ON\n",
+                      error);
+        adc_oneshot_del_unit(adc);
         vTaskDelete(nullptr);
         return;
     }
@@ -40,12 +78,12 @@ void task(void*) {
     Hysteresis control;
     for (;;) {
         uint32_t sum = 0;
-        esp_err_t error = ESP_OK;
+        error = ESP_OK;
         for (unsigned i = 0; i < 8; ++i) {
-            int raw = 0;
-            error = adc2_get_raw(ADC2_CHANNEL_3, ADC_WIDTH_BIT_12, &raw);
-            if (error != ESP_OK || raw <= 0 || raw >= 4095) break;
-            const uint32_t mv = esp_adc_cal_raw_to_voltage(raw, &calibration);
+            int mv = 0;
+            error = adc_oneshot_get_calibrated_result(
+                adc, calibration, channel, &mv);
+            if (error != ESP_OK || mv <= 0) break;
             if (!std::isfinite(ntcTemperatureC(mv))) {
                 error = ESP_ERR_INVALID_RESPONSE;
                 break;
@@ -58,7 +96,7 @@ void task(void*) {
         portENTER_CRITICAL(&mutex);
         if (shutdown) {
             portEXIT_CRITICAL(&mutex);
-            return;
+            break;
         }
         digitalWrite(BOARD.thermistor.fan_pin, enabled ? HIGH : LOW);
         cachedTemperature = temperature;
@@ -70,6 +108,9 @@ void task(void*) {
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+    adc_cali_delete_scheme_curve_fitting(calibration);
+    adc_oneshot_del_unit(adc);
+    vTaskDelete(nullptr);
 }
 }  // namespace
 
