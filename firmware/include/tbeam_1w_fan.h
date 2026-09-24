@@ -26,6 +26,7 @@ public:
 };
 
 float temperatureC();
+bool isEnabled();
 void begin();
 void powerOff();
 
