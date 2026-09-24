@@ -2088,9 +2088,11 @@ void loop() {
                     ip       = BOARD.has_wifi ? WifiManager::getIPString(): "---";
                 }
                 uint16_t batteryMv = BatteryMonitor::readMilliVolts(BOARD.battery);
+                const float boardTemperatureC = TBeam1WFan::temperatureC();
                 status.battery_mv = batteryMv;
                 oled.showStatus(status.rx_count, status.tx_count,
-                                ssid, ip, stateTag, fwVersion.c_str(), batteryMv);
+                                ssid, ip, stateTag, fwVersion.c_str(), batteryMv,
+                                boardTemperatureC);
             } else if (currentScreen == Screen::RADIO) {
                 oled.showRadioConfig(currentConfig.freq_hz,
                                      currentConfig.bandwidth_hz,

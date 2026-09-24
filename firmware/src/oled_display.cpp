@@ -98,7 +98,8 @@ void OledDisplay::showBoot(const char* version) {
 void OledDisplay::showStatus(uint32_t rx, uint32_t tx,
                              const char* ssid, const char* ip,
                              const char* state, const char* version,
-                             uint16_t battery_mv) {
+                             uint16_t battery_mv,
+                             float board_temperature_c) {
     if (!_ready) return;
 
     char buf[32];
@@ -148,7 +149,19 @@ void OledDisplay::showStatus(uint32_t rx, uint32_t tx,
     // battery sensing pass a real value; every other board silently omits it.
     if (battery_mv != 0xFFFF) {
         _display->setCursor(0, 54);
-        snprintf(buf, sizeof(buf), "BAT:%.2fV", (double)(battery_mv / 1000.0f));
+        if (std::isfinite(board_temperature_c)) {
+            snprintf(buf, sizeof(buf), "BAT:%.2fV %.1fC",
+                     (double)(battery_mv / 1000.0f),
+                     (double)board_temperature_c);
+        } else {
+            snprintf(buf, sizeof(buf), "BAT:%.2fV",
+                     (double)(battery_mv / 1000.0f));
+        }
+        _display->print(buf);
+    } else if (std::isfinite(board_temperature_c)) {
+        _display->setCursor(0, 54);
+        snprintf(buf, sizeof(buf), "TEMP:%.1fC",
+                 (double)board_temperature_c);
         _display->print(buf);
     }
 

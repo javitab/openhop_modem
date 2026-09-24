@@ -18,7 +18,8 @@ public:
     inline void showStatus(uint32_t, uint32_t,
                            const char*, const char*,
                            const char*, const char*,
-                           uint16_t = 0xFFFF) {}
+                           uint16_t = 0xFFFF,
+                           float = __builtin_nanf("")) {}
     inline void setDisplayName(const char*) {}
     inline void setRadioInfo(uint32_t, uint8_t, uint32_t,
                              uint8_t, int8_t,
