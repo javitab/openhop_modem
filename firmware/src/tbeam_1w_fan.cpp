@@ -14,6 +14,7 @@ namespace {
 portMUX_TYPE mutex = portMUX_INITIALIZER_UNLOCKED;
 float cachedTemperature = NAN;
 uint32_t cachedAt = 0;
+bool cachedFanEnabled = true;
 bool shutdown = false;
 
 void task(void*) {
@@ -101,6 +102,7 @@ void task(void*) {
         digitalWrite(BOARD.thermistor.fan_pin, enabled ? HIGH : LOW);
         cachedTemperature = temperature;
         cachedAt = millis();
+        cachedFanEnabled = enabled;
         portEXIT_CRITICAL(&mutex);
         if (!std::isfinite(temperature)) {
             Serial.printf("ERROR: T-Beam 1W NTC reading failed: %d; fan ON\n",
@@ -118,6 +120,7 @@ void begin() {
     if (BOARD.thermistor.ntc_pin < 0 || BOARD.thermistor.fan_pin < 0) return;
     pinMode(BOARD.thermistor.fan_pin, OUTPUT);
     digitalWrite(BOARD.thermistor.fan_pin, HIGH);
+    cachedFanEnabled = true;
     shutdown = false;
     if (xTaskCreate(task, "tbeam_fan", 4096, nullptr, 1, nullptr) != pdPASS) {
         Serial.println("ERROR: T-Beam 1W fan task could not start; fan stays ON");
@@ -130,6 +133,7 @@ void powerOff() {
     shutdown = true;
     cachedTemperature = NAN;
     cachedAt = 0;
+    cachedFanEnabled = false;
     digitalWrite(BOARD.thermistor.fan_pin, LOW);
     portEXIT_CRITICAL(&mutex);
 }
@@ -142,10 +146,19 @@ float temperatureC() {
     portEXIT_CRITICAL(&mutex);
     return (millis() - at < 3000) ? value : NAN;
 }
+
+bool isEnabled() {
+    if (BOARD.thermistor.fan_pin < 0) return false;
+    portENTER_CRITICAL(&mutex);
+    const bool enabled = cachedFanEnabled;
+    portEXIT_CRITICAL(&mutex);
+    return enabled;
+}
 }  // namespace TBeam1WFan
 #else
 namespace TBeam1WFan {
 float temperatureC() { return NAN; }
+bool isEnabled() { return false; }
 void begin() {}
 void powerOff() {}
 }  // namespace TBeam1WFan

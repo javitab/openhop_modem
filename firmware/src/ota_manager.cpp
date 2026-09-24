@@ -214,6 +214,8 @@ static WebUiShared::Model buildWebUiModel() {
                                       std::isfinite(snap.boardTemperatureC);
     model.boardTemperatureC = snap.boardTemperatureC;
     model.capabilities.boardTemperature = snap.hasBoardTemperature;
+    model.boardFanEnabled = snap.boardFanEnabled;
+    model.capabilities.boardFan = snap.hasBoardFan;
     model.capabilities.wifi = BOARD.has_wifi;
     model.capabilities.ethernet = BOARD.ethernet.enabled;
     model.capabilities.mdns = true;

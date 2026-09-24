@@ -504,6 +504,8 @@ Snapshot capture() {
     snap.status.battery_mv = BatteryMonitor::readMilliVolts(BOARD.battery);
     snap.hasBoardTemperature = BOARD.thermistor.ntc_pin >= 0;
     snap.boardTemperatureC = TBeam1WFan::temperatureC();
+    snap.hasBoardFan = BOARD.thermistor.fan_pin >= 0;
+    snap.boardFanEnabled = TBeam1WFan::isEnabled();
     snap.radio = currentConfig;
     snap.firmwareVersion = fwVersion;
     snap.radioStandby = radioStandby;

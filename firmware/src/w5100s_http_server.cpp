@@ -143,6 +143,8 @@ WebUiShared::Model buildModel() {
                                       std::isfinite(runtime.boardTemperatureC);
     model.boardTemperatureC = runtime.boardTemperatureC;
     model.capabilities.boardTemperature = runtime.hasBoardTemperature;
+    model.boardFanEnabled = runtime.boardFanEnabled;
+    model.capabilities.boardFan = runtime.hasBoardFan;
     model.capabilities.ethernet = true;
     model.capabilities.battery = BOARD.battery.pin >= 0;
     model.capabilities.gps = GPSManager::hasGpsPins();

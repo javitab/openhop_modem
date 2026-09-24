@@ -231,12 +231,18 @@ void testOptionalBoardTemperatureRendering() {
     model.boardTemperatureAvailable = true;
     model.boardTemperatureC = 46.5f;
     model.capabilities.boardTemperature = true;
+    model.capabilities.boardFan = true;
+    model.boardFanEnabled = true;
     const std::string stats = renderStatsPage(model);
     assertContains(stats, "Board temperature</span><span class='v'>46.5 C");
+    assertContains(stats, "Cooling fan</span><span class='v'>ON");
+    assertContains(renderStatsJson(model), "\"board_fan_enabled\":true");
 
     model.boardTemperatureAvailable = false;
     model.capabilities.boardTemperature = false;
+    model.capabilities.boardFan = false;
     assertNotContains(renderStatsPage(model), "Board temperature</span>");
+    assertNotContains(renderStatsPage(model), "Cooling fan</span>");
 }
 
 }  // namespace
